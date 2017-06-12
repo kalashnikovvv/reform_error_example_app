@@ -30,7 +30,7 @@ class PrizeForm < Reform::Form
   feature Reform::Form::Dry
 
   property :type
-  collection :amounts, field: :hash, populate_if_empty: Hash, form: CurrencyAmountForm
+  collection :amounts, field: :hash, populate_if_empty: Hash, default: [], form: CurrencyAmountForm
 end
 
 class TournamentForm < Reform::Form
@@ -40,8 +40,23 @@ class TournamentForm < Reform::Form
   collection :prizes, field: :hash, populate_if_empty: Hash, form: PrizeForm
 end
 
+class InlineTournamentForm < Reform::Form
+  include Disposable::Twin::Property::Hash
+  feature Reform::Form::Coercion
+  feature Reform::Form::Dry
+
+  collection :prizes, field: :hash, populate_if_empty: Hash do
+    property :type
+
+    collection :amounts, field: :hash, populate_if_empty: Hash do
+      property :currency_id, type: Types::Form::Int
+      property :value
+    end
+  end
+end
+
 params_filepath = File.expand_path("params.json", __dir__)
 params = JSON.parse(File.read(params_filepath))
 
-form = TournamentForm.new(Tournament.new)
-form.validate(params)
+form = InlineTournamentForm.new(Tournament.new)
+puts form.validate(params)
